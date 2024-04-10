@@ -1,0 +1,43 @@
+from lightgbm import LGBMClassifier
+
+X = train.loc[:, FEATURES]
+y = train.loc[:, TARGET]
+
+final_predictions = []
+kf = KFold(n_splits=10, shuffle=True, random_state=42)
+for fold, (train_indicies, valid_indicies) in enumerate(kf.split(X=X)):
+    X_train = X.loc[train_indicies]
+    X_valid = X.loc[valid_indicies]
+    X_test = test.copy()
+    
+    y_train = y.loc[train_indicies]
+    y_valid = y.loc[valid_indicies]
+    
+    
+    scaler = StandardScaler()
+    X_train[FEATURES] = scaler.fit_transform(X_train[FEATURES])
+    X_valid[FEATURES] = scaler.transform(X_valid[FEATURES])
+    X_test[FEATURES] = scaler.transform(X_test[FEATURES])
+    model = LGBMClassifier(
+    max_depth = 3,
+    num_leaves = 7,
+    n_estimators = 10000,
+    colsample_bytree = 0.3,
+    subsample = 0.5,
+    random_state = 42,
+    reg_alpha=18,
+    reg_lambda=17,
+    learning_rate = 0.095,
+    device = 'gpu',
+    objective= 'binary'
+    )
+    model.fit(X_train, y_train,
+             verbose = False,
+             eval_set = [(X_train, y_train), (X_valid, y_valid)],
+             eval_metric = "auc",
+             early_stopping_rounds = 200)
+    
+    preds_valid = model.predict_proba(X_valid)[:,1]
+    preds_test = model.predict_proba(X_test)[:,1]
+    final_predictions.append(preds_test)
+    print(fold, roc_auc_score(y_valid, preds_valid))
