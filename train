@@ -1,3 +1,40 @@
+# This Python 3 environment comes with many helpful analytics libraries installed
+# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
+# For example, here's several helpful packages to load
+
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+from lightgbm import LGBMClassifier
+from sklearn.model_selection import KFold, StratifiedKFold
+import os
+# Input data files are available in the read-only "../input/" directory
+# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
+
+import os
+for dirname, _, filenames in os.walk('/kaggle/input'):
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
+
+# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using "Save & Run All" 
+# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session
+
+
+train = pd.read_csv("/kaggle/input/data-csv/tabular-playground-series-sep-2021/train.csv", index_col = 'id')
+test = pd.read_csv('/kaggle/input/data-csv/tabular-playground-series-sep-2021/test.csv',index_col = 'id')
+FEATURES = list(train.columns[:-1])
+TARGET = train.columns[-1]
+
+train.head()
+train['n_missing'] = train[FEATURES].isna().sum(axis=1)
+test['n_missing'] = test[FEATURES].isna().sum(axis=1)
+
+train['std'] = train[FEATURES].std(axis=1)
+test['std'] = test[FEATURES].std(axis=1)
+
+FEATURES += ['n_missing', 'std']
+n_missing = train['n_missing'].copy()
+train[FEATURES] = train[FEATURES].fillna(train[FEATURES].mean())
+test[FEATURES] = test[FEATURES].fillna(test[FEATURES].mean())
 from lightgbm import LGBMClassifier
 
 X = train.loc[:, FEATURES]
